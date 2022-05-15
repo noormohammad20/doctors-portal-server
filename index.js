@@ -15,6 +15,21 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 })
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized Access' })
+    }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            res.status(403).send({ message: 'Forbidden Access' })
+        }
+        req.decoded = decoded
+        next()
+    })
+}
+
 async function run() {
     try {
         await client.connect()
@@ -27,6 +42,11 @@ async function run() {
             const cursor = serviceCollection.find(query)
             const services = await cursor.toArray()
             res.send(services)
+        })
+
+        app.get('/user', async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
         })
 
         app.put('/user/:email', async (req, res) => {
@@ -45,6 +65,7 @@ async function run() {
         //warning:
         //this is not the proper way to query
         //after learning more about mongoDB . use aggregate lookup , pipeline, match, group
+
         app.get('/available', async (req, res) => {
             const date = req.query.date
             //step 1 : get all services
@@ -80,13 +101,18 @@ async function run() {
       * app.delete('/booking/:id') //delete a booking
      */
 
-        app.get('/booking', async (req, res) => {
+        app.get('/booking', verifyJWT, async (req, res) => {
             const patient = req.query.patient
-            const authorization = req.headers.authorization
-            console.log('auth', authorization)
-            const query = { patient: patient }
-            const bookings = await bookingCollection.find(query).toArray()
-            res.send(bookings)
+            const decodedEmail = req?.decoded?.email
+            if (patient === decodedEmail) {
+                const query = { patient: patient }
+                const bookings = await bookingCollection.find(query).toArray()
+                return res.send(bookings)
+            }
+            else {
+                return res.status(403).send({ message: 'Forbidden Access' })
+            }
+
         })
 
         app.post('/booking', async (req, res) => {
