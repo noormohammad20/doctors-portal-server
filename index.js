@@ -7,12 +7,7 @@ const jwt = require('jsonwebtoken')
 const app = express()
 const port = process.env.PORT || 5000
 
-const corsConfig = {
-    origin: true,
-    credentials: true,
-}
-app.use(cors(corsConfig))
-app.options("*", cors(corsConfig))
+app.use(cors())
 app.use(express.json())
 
 
