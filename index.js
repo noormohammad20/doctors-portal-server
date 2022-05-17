@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb')
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 var nodemailer = require('nodemailer')
 const Sib = require('sib-api-v3-sdk')
@@ -194,6 +194,13 @@ async function run() {
                 return res.status(403).send({ message: 'Forbidden Access' })
             }
 
+        })
+
+        app.get('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const booking = await bookingCollection.findOne(query)
+            res.send(booking)
         })
 
         app.post('/booking', async (req, res) => {
