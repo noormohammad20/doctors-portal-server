@@ -78,14 +78,7 @@ function sendAppointmentEmail(booking) {
         </div
         `
     })
-    // emailClient.sendMail(email, function (err, info) {
-    //     if (err) {
-    //         console.log(err)
-    //     }
-    //     else {
-    //         console.log('Message sent: ', info)
-    //     }
-    // })
+
 }
 
 async function run() {
