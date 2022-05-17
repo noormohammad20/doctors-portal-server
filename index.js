@@ -3,6 +3,8 @@ const cors = require('cors')
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb')
 const jwt = require('jsonwebtoken')
+var nodemailer = require('nodemailer')
+const Sib = require('sib-api-v3-sdk')
 
 const app = express()
 const port = process.env.PORT || 5000
@@ -39,6 +41,51 @@ function verifyJWT(req, res, next) {
         req.decoded = decoded
         next()
     })
+}
+
+
+
+const emailClient = Sib.ApiClient.instance
+const apiKey = emailClient.authentications['api-key']
+apiKey.apiKey = process.env.EMAIL_SENDER_KEY
+const tranEmailApi = new Sib.TransactionalEmailsApi()
+
+
+function sendAppointmentEmail(booking) {
+    const { patient, patientName, treatment, date, slot } = booking
+    const sender = {
+        email: process.env.EMAIL_SENDER,
+    }
+
+    tranEmailApi.sendTransacEmail({
+        sender,
+        to: [{ email: patient }],
+
+
+        subject: `your appointment for ${treatment} on ${date} at ${slot} is confirmed`,
+        textContent: `your appointment for ${treatment} on ${date} at ${slot} is confirmed`,
+        htmlContent: `
+        <div>
+        <h3>Hello ${patientName} </h3>
+        <p>your appointment for ${treatment} is confirmed</p>
+        <p>looking forward to seeing you on ${date} at ${slot}</p>
+
+        <h3>Our Address</h3>
+        <p>Andor killa bandor bon</p>
+        <p>Bangladesh</p>
+
+        <a href='https://web.programming-hero.com/'>Unsubscribe</a>
+        </div
+        `
+    })
+    // emailClient.sendMail(email, function (err, info) {
+    //     if (err) {
+    //         console.log(err)
+    //     }
+    //     else {
+    //         console.log('Message sent: ', info)
+    //     }
+    // })
 }
 
 async function run() {
@@ -164,6 +211,8 @@ async function run() {
                 return res.send({ success: false, booking: exists })
             }
             const result = await bookingCollection.insertOne(booking)
+            console.log('sending email')
+            sendAppointmentEmail(booking)
             return res.send({ success: true, result })
         })
 
