@@ -79,6 +79,37 @@ function sendAppointmentEmail(booking) {
     })
 
 }
+function sendPaymentConfirmationEmail(booking) {
+    const { patient, patientName, treatment, date, slot } = booking
+    const sender = {
+        email: process.env.EMAIL_SENDER,
+    }
+
+    tranEmailApi.sendTransacEmail({
+        sender,
+        to: [{ email: patient }],
+
+
+        subject: `We have received your payment for ${treatment} on ${date} at ${slot} `,
+        textContent: `your payment  for this appointment ${treatment} on ${date} at ${slot} is confirmed`,
+        htmlContent: `
+        <div>
+        <h3>Hello ${patientName} </h3>
+        <h3>thank you for your payment </h3>
+        <h3>We have received your payment </h3>
+        <p>your appointment for ${treatment} is confirmed</p>
+        <p>looking forward to seeing you on ${date} at ${slot}</p>
+
+        <h3>Our Address</h3>
+        <p>Andor killa bandor bon</p>
+        <p>Bangladesh</p>
+
+        <a href='https://web.programming-hero.com/'>Unsubscribe</a>
+        </div
+        `
+    })
+
+}
 
 async function run() {
     try {
