@@ -3,7 +3,6 @@ const cors = require('cors')
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
-var nodemailer = require('nodemailer')
 const Sib = require('sib-api-v3-sdk')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const app = express()
@@ -12,7 +11,7 @@ const port = process.env.PORT || 5000
 const corsConfig = {
     origin: '*',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 }
 app.use(cors(corsConfig))
 app.options("*", cors(corsConfig))
@@ -88,6 +87,7 @@ async function run() {
         const bookingCollection = client.db('doctors_portal').collection('booking')
         const userCollection = client.db('doctors_portal').collection('users')
         const doctorCollection = client.db('doctors_portal').collection('doctors')
+        const paymentCollection = client.db('doctors_portal').collection('payments')
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email
@@ -226,6 +226,22 @@ async function run() {
             console.log('sending email')
             sendAppointmentEmail(booking)
             return res.send({ success: true, result })
+        })
+
+        app.patch('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id
+            const payment = req.body
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const result = await paymentCollection.insertOne(payment)
+            const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc)
+            res.send(updatedBooking)
         })
 
         app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
